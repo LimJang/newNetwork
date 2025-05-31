@@ -453,6 +453,184 @@ body {
     font-weight: 600;
 }
 
+/* Boxing Panel Specific Styles */
+.boxing-panel {
+    max-width: 1000px;
+}
+
+.boxing-container {
+    position: relative;
+    margin: 20px 0;
+    text-align: center;
+}
+
+#boxingCanvas {
+    border: 4px solid var(--medieval-brown);
+    border-radius: 12px;
+    background: var(--dark-stone);
+    box-shadow: 
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        inset 0 0 20px rgba(139, 69, 19, 0.2);
+    display: block;
+    margin: 0 auto;
+}
+
+.ground-line {
+    position: absolute;
+    bottom: 58px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 8px);
+    height: 2px;
+    background: var(--primary-gold);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.boxing-controls {
+    margin: 25px 0;
+    text-align: center;
+}
+
+.control-instructions {
+    margin-top: 25px;
+    padding: 20px;
+    background: rgba(139, 69, 19, 0.15);
+    border: 2px solid var(--medieval-brown);
+    border-radius: 12px;
+}
+
+.control-instructions h4 {
+    font-family: 'Cinzel', serif;
+    color: var(--medieval-brown);
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--medieval-brown);
+    padding-bottom: 8px;
+    text-align: center;
+}
+
+.controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.control-group {
+    text-align: left;
+}
+
+.control-group h5 {
+    font-family: 'Cinzel', serif;
+    color: var(--primary-gold);
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+    border-bottom: 1px solid var(--primary-gold);
+    padding-bottom: 4px;
+}
+
+.control-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.control-item:hover {
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 35px;
+    background: var(--medieval-brown);
+    color: var(--parchment);
+    border: 2px solid var(--primary-gold);
+    border-radius: 6px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-right: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.action {
+    font-family: 'Noto Serif KR', serif;
+    color: var(--dark-stone);
+    font-size: 0.95rem;
+    flex: 1;
+}
+
+.character-status {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.boxing-log {
+    margin-top: 25px;
+}
+
+.boxing-log h4 {
+    font-family: 'Cinzel', serif;
+    color: var(--medieval-brown);
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--medieval-brown);
+    padding-bottom: 5px;
+}
+
+/* Combat-specific log styles */
+.log-entry.combat {
+    color: var(--royal-red);
+    font-weight: 600;
+}
+
+.log-entry.energy {
+    color: var(--primary-gold);
+}
+
+/* Enhanced responsive design for boxing */
+@media (max-width: 768px) {
+    .boxing-panel {
+        margin: 10px;
+    }
+    
+    #boxingCanvas {
+        width: 100%;
+        max-width: 600px;
+        height: auto;
+    }
+    
+    .controls-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .control-item {
+        flex-direction: column;
+        text-align: center;
+        padding: 12px;
+    }
+    
+    .key {
+        margin-right: 0;
+        margin-bottom: 8px;
+        min-width: 50px;
+        height: 40px;
+    }
+    
+    .action {
+        text-align: center;
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .title-main {

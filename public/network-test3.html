@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Boxing Chamber</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="medieval-container">
+        <header class="castle-header">
+            <h1 class="title-main">Physics Boxing Chamber</h1>
+            <h2 class="title-sub">물리 기반 복싱 테스트</h2>
+        </header>
+        
+        <main class="content-area">
+            <div class="scroll-panel boxing-panel">
+                <div class="panel-header">
+                    <h3>Medieval Physics Boxing</h3>
+                    <p class="subtitle">중세 물리 복싱 시뮬레이션</p>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="status-area">
+                        <div class="connection-status">
+                            <span class="status-label">Boxing Server:</span>
+                            <span id="boxingStatus" class="status-disconnected">Disconnected</span>
+                        </div>
+                        <div class="user-count">
+                            <span class="status-label">Active Boxers:</span>
+                            <span id="userCount">0</span>
+                        </div>
+                        <div class="character-status">
+                            <span class="status-label">Character Energy:</span>
+                            <span id="energyLevel" class="status-info">100%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="boxing-container">
+                        <canvas id="boxingCanvas" width="800" height="500"></canvas>
+                        <div class="canvas-overlay">
+                            <div class="fps-counter">FPS: <span id="fpsDisplay">0</span></div>
+                            <div class="physics-info">Physics: <span id="physicsTime">0.0s</span></div>
+                        </div>
+                        <div class="ground-line"></div>
+                    </div>
+                    
+                    <div class="boxing-controls">
+                        <button id="connectBoxingBtn" class="medieval-button">
+                            <span class="button-text">Enter Boxing Ring</span>
+                            <span class="button-subtext">복싱 링 입장</span>
+                        </button>
+                        
+                        <button id="resetCharacterBtn" class="medieval-button" disabled>
+                            <span class="button-text">Reset Character</span>
+                            <span class="button-subtext">캐릭터 초기화</span>
+                        </button>
+                        
+                        <div class="control-instructions">
+                            <h4>Combat Controls / 전투 조작법</h4>
+                            <div class="controls-grid">
+                                <div class="control-group">
+                                    <h5>Movement / 이동</h5>
+                                    <div class="control-item">
+                                        <span class="key">A</span>
+                                        <span class="action">Move Left / 왼쪽 이동</span>
+                                    </div>
+                                    <div class="control-item">
+                                        <span class="key">D</span>
+                                        <span class="action">Move Right / 오른쪽 이동</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="control-group">
+                                    <h5>Attacks / 공격</h5>
+                                    <div class="control-item">
+                                        <span class="key">→</span>
+                                        <span class="action">Jab / 잽</span>
+                                    </div>
+                                    <div class="control-item">
+                                        <span class="key">↓</span>
+                                        <span class="action">Hook / 훅</span>
+                                    </div>
+                                    <div class="control-item">
+                                        <span class="key">↑</span>
+                                        <span class="action">Uppercut / 어퍼컷</span>
+                                    </div>
+                                    <div class="control-item">
+                                        <span class="key">←</span>
+                                        <span class="action">Overhead Hook / 오버헤드 훅</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="boxing-log">
+                        <h4>Combat Log / 전투 로그</h4>
+                        <div id="boxingLogContainer" class="log-container">
+                            <div class="log-entry">Boxing physics engine ready. Press keys to fight!</div>
+                        </div>
+                    </div>
+                    
+                    <div class="navigation-area">
+                        <button class="medieval-button secondary" onclick="goToPhysicsTest()">
+                            <span class="button-text">← Physics Test</span>
+                            <span class="button-subtext">물리 테스트로</span>
+                        </button>
+                        
+                        <button class="medieval-button secondary" onclick="goHome()">
+                            <span class="button-text">← Laboratory</span>
+                            <span class="button-subtext">연구실로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="boxing-physics.js"></script>
+    <script src="network-test3.js"></script>
+    
+    <script>
+        function goHome() {
+            window.location.href = '/';
+        }
+        
+        function goToPhysicsTest() {
+            window.location.href = '/network-test2';
+        }
+    </script>
+</body>
+</html>
