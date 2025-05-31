@@ -1,1 +1,260 @@
-// Network-based RPG Client\nlet rpgSocket = null;\nlet rpgEngine = null;\nlet rpgRenderer = null;\nlet isRPGConnected = false;\nlet rpgAnimationId = null;\n\n// DOM elements\nconst connectRPGBtn = document.getElementById('connectRPGBtn');\nconst respawnBtn = document.getElementById('respawnBtn');\nconst rpgStatus = document.getElementById('rpgStatus');\nconst userCount = document.getElementById('userCount');\nconst tickCount = document.getElementById('tickCount');\nconst fpsDisplay = document.getElementById('fpsDisplay');\nconst characterName = document.getElementById('characterName');\nconst characterPos = document.getElementById('characterPos');\nconst movingStatus = document.getElementById('movingStatus');\nconst rpgLogContainer = document.getElementById('rpgLogContainer');\nconst canvas = document.getElementById('rpgCanvas');\n\n// Initialize RPG system\nfunction initializeRPG() {\n    rpgEngine = new RPGEngine();\n    rpgRenderer = new RPGRenderer(canvas);\n    \n    // Setup mouse click handling\n    canvas.addEventListener('click', handleCanvasClick);\n    \n    // Setup movement callback\n    rpgEngine.setMouseMoveCallback(sendMovementCommand);\n    \n    addRPGLog('Medieval RPG engine initialized', 'success');\n    addRPGLog('Click \"Enter Fantasy World\" to begin your adventure!', 'info');\n}\n\n// Event listeners\nconnectRPGBtn.addEventListener('click', toggleRPGConnection);\nrespawnBtn.addEventListener('click', respawnCharacter);\n\nfunction toggleRPGConnection() {\n    if (isRPGConnected) {\n        disconnectRPG();\n    } else {\n        connectRPG();\n    }\n}\n\nfunction connectRPG() {\n    addRPGLog('Connecting to fantasy world...', 'info');\n    \n    rpgSocket = io();\n    \n    rpgSocket.on('connect', () => {\n        isRPGConnected = true;\n        updateRPGStatus(true);\n        addRPGLog('Connected to fantasy world!', 'success');\n        connectRPGBtn.innerHTML = `\n            <span class=\"button-text\">Leave Fantasy World</span>\n            <span class=\"button-subtext\">판타지 세계 나가기</span>\n        `;\n        enableRPGControls(true);\n        startRPGLoop();\n        \n        // Request to join the world\n        rpgSocket.emit('joinWorld');\n    });\n    \n    rpgSocket.on('disconnect', () => {\n        isRPGConnected = false;\n        updateRPGStatus(false);\n        addRPGLog('Disconnected from fantasy world', 'error');\n        connectRPGBtn.innerHTML = `\n            <span class=\"button-text\">Enter Fantasy World</span>\n            <span class=\"button-subtext\">판타지 세계 입장</span>\n        `;\n        enableRPGControls(false);\n        stopRPGLoop();\n        rpgEngine.stopTickSystem();\n    });\n    \n    rpgSocket.on('userCount', (count) => {\n        userCount.textContent = count;\n        addRPGLog(`Players in world: ${count}`, 'info');\n    });\n    \n    rpgSocket.on('worldState', (state) => {\n        if (rpgEngine) {\n            rpgEngine.setState(state);\n        }\n    });\n    \n    rpgSocket.on('characterJoined', (data) => {\n        if (rpgEngine) {\n            rpgEngine.addCharacter(data.character);\n            \n            if (data.character.id === rpgSocket.id) {\n                rpgEngine.myCharacterId = data.character.id;\n                addRPGLog(`Your character ${data.character.name} has entered the world!`, 'success');\n            } else {\n                addRPGLog(`${data.character.name} has joined the world`, 'info');\n            }\n        }\n    });\n    \n    rpgSocket.on('characterLeft', (data) => {\n        if (rpgEngine) {\n            rpgEngine.removeCharacter(data.characterId);\n            addRPGLog(`${data.characterName} has left the world`, 'info');\n        }\n    });\n    \n    rpgSocket.on('characterMoved', (data) => {\n        if (rpgEngine) {\n            rpgEngine.updateCharacter(data.character);\n        }\n    });\n    \n    rpgSocket.on('serverTick', (tickData) => {\n        if (rpgEngine) {\n            rpgEngine.currentTick = tickData.tick;\n            tickCount.textContent = tickData.tick;\n        }\n    });\n    \n    rpgSocket.on('connect_error', (error) => {\n        addRPGLog(`World connection error: ${error.message}`, 'error');\n    });\n}\n\nfunction disconnectRPG() {\n    if (rpgSocket) {\n        rpgSocket.disconnect();\n        rpgSocket = null;\n    }\n    stopRPGLoop();\n}\n\nfunction startRPGLoop() {\n    if (rpgAnimationId) {\n        cancelAnimationFrame(rpgAnimationId);\n    }\n    \n    // Start tick system\n    rpgEngine.startTickSystem();\n    \n    function rpgLoop() {\n        if (rpgEngine && rpgRenderer && isRPGConnected) {\n            // Render current state\n            rpgRenderer.render(rpgEngine);\n            \n            // Update displays\n            fpsDisplay.textContent = rpgRenderer.getFPS();\n            \n            // Update character info\n            const myChar = rpgEngine.getMyCharacter();\n            if (myChar) {\n                characterPos.textContent = `${myChar.x}, ${myChar.y}`;\n                movingStatus.textContent = myChar.isMoving ? 'Moving' : 'Idle';\n            }\n        }\n        \n        rpgAnimationId = requestAnimationFrame(rpgLoop);\n    }\n    \n    rpgLoop();\n}\n\nfunction stopRPGLoop() {\n    if (rpgAnimationId) {\n        cancelAnimationFrame(rpgAnimationId);\n        rpgAnimationId = null;\n    }\n}\n\nfunction handleCanvasClick(event) {\n    if (!isRPGConnected || !rpgEngine) {\n        addRPGLog('Not connected to world', 'error');\n        return;\n    }\n    \n    const rect = canvas.getBoundingClientRect();\n    const success = rpgEngine.handleMouseClick(event.clientX, event.clientY, rect);\n    \n    if (!success) {\n        addRPGLog('Cannot move to that location', 'error');\n    }\n}\n\nfunction sendMovementCommand(targetX, targetY) {\n    if (!isRPGConnected || !rpgSocket) {\n        addRPGLog('Not connected to world', 'error');\n        return;\n    }\n    \n    const myChar = rpgEngine.getMyCharacter();\n    if (!myChar) {\n        addRPGLog('Character not found', 'error');\n        return;\n    }\n    \n    rpgSocket.emit('moveCharacter', {\n        fromX: myChar.x,\n        fromY: myChar.y,\n        toX: targetX,\n        toY: targetY\n    });\n    \n    addRPGLog(`Moving to (${targetX}, ${targetY})`, 'info');\n}\n\nfunction respawnCharacter() {\n    if (!isRPGConnected || !rpgSocket) {\n        addRPGLog('Not connected to world', 'error');\n        return;\n    }\n    \n    rpgSocket.emit('respawnCharacter');\n    addRPGLog('Respawning character...', 'info');\n}\n\nfunction updateRPGStatus(connected) {\n    if (connected) {\n        rpgStatus.textContent = 'Connected';\n        rpgStatus.className = 'status-connected';\n    } else {\n        rpgStatus.textContent = 'Disconnected';\n        rpgStatus.className = 'status-disconnected';\n        userCount.textContent = '0';\n        tickCount.textContent = '0';\n        characterPos.textContent = '0, 0';\n        movingStatus.textContent = 'Idle';\n    }\n}\n\nfunction enableRPGControls(enabled) {\n    respawnBtn.disabled = !enabled;\n}\n\nfunction addRPGLog(message, type = 'info') {\n    const logEntry = document.createElement('div');\n    logEntry.className = `log-entry ${type}`;\n    \n    const timestamp = new Date().toLocaleTimeString();\n    logEntry.textContent = `[${timestamp}] ${message}`;\n    \n    rpgLogContainer.appendChild(logEntry);\n    rpgLogContainer.scrollTop = rpgLogContainer.scrollHeight;\n    \n    // Keep only last 30 log entries\n    while (rpgLogContainer.children.length > 30) {\n        rpgLogContainer.removeChild(rpgLogContainer.firstChild);\n    }\n}\n\n// Initialize when page loads\ndocument.addEventListener('DOMContentLoaded', () => {\n    initializeRPG();\n    addRPGLog('Medieval Fantasy World ready', 'info');\n    addRPGLog('Enter the world to begin your adventure with other players', 'info');\n});
+// Network-based RPG Client
+let rpgSocket = null;
+let rpgEngine = null;
+let rpgRenderer = null;
+let isRPGConnected = false;
+let rpgAnimationId = null;
+
+// DOM elements
+const connectRPGBtn = document.getElementById('connectRPGBtn');
+const respawnBtn = document.getElementById('respawnBtn');
+const rpgStatus = document.getElementById('rpgStatus');
+const userCount = document.getElementById('userCount');
+const tickCount = document.getElementById('tickCount');
+const fpsDisplay = document.getElementById('fpsDisplay');
+const characterName = document.getElementById('characterName');
+const characterPos = document.getElementById('characterPos');
+const movingStatus = document.getElementById('movingStatus');
+const rpgLogContainer = document.getElementById('rpgLogContainer');
+const canvas = document.getElementById('rpgCanvas');
+
+// Initialize RPG system
+function initializeRPG() {
+    rpgEngine = new RPGEngine();
+    rpgRenderer = new RPGRenderer(canvas);
+    
+    // Setup mouse click handling
+    canvas.addEventListener('click', handleCanvasClick);
+    
+    // Setup movement callback
+    rpgEngine.setMouseMoveCallback(sendMovementCommand);
+    
+    addRPGLog('Medieval RPG engine initialized', 'success');
+    addRPGLog('Click "Enter Fantasy World" to begin your adventure!', 'info');
+}
+
+// Event listeners
+connectRPGBtn.addEventListener('click', toggleRPGConnection);
+respawnBtn.addEventListener('click', respawnCharacter);
+
+function toggleRPGConnection() {
+    if (isRPGConnected) {
+        disconnectRPG();
+    } else {
+        connectRPG();
+    }
+}
+
+function connectRPG() {
+    addRPGLog('Connecting to fantasy world...', 'info');
+    
+    rpgSocket = io();
+    
+    rpgSocket.on('connect', () => {
+        isRPGConnected = true;
+        updateRPGStatus(true);
+        addRPGLog('Connected to fantasy world!', 'success');
+        connectRPGBtn.innerHTML = `
+            <span class="button-text">Leave Fantasy World</span>
+            <span class="button-subtext">판타지 세계 나가기</span>
+        `;
+        enableRPGControls(true);
+        startRPGLoop();
+        
+        // Request to join the world
+        rpgSocket.emit('joinWorld');
+    });
+    
+    rpgSocket.on('disconnect', () => {
+        isRPGConnected = false;
+        updateRPGStatus(false);
+        addRPGLog('Disconnected from fantasy world', 'error');
+        connectRPGBtn.innerHTML = `
+            <span class="button-text">Enter Fantasy World</span>
+            <span class="button-subtext">판타지 세계 입장</span>
+        `;
+        enableRPGControls(false);
+        stopRPGLoop();
+        rpgEngine.stopTickSystem();
+    });
+    
+    rpgSocket.on('userCount', (count) => {
+        userCount.textContent = count;
+        addRPGLog(`Players in world: ${count}`, 'info');
+    });
+    
+    rpgSocket.on('worldState', (state) => {
+        if (rpgEngine) {
+            rpgEngine.setState(state);
+        }
+    });
+    
+    rpgSocket.on('characterJoined', (data) => {
+        if (rpgEngine) {
+            rpgEngine.addCharacter(data.character);
+            
+            if (data.character.id === rpgSocket.id) {
+                rpgEngine.myCharacterId = data.character.id;
+                addRPGLog(`Your character ${data.character.name} has entered the world!`, 'success');
+            } else {
+                addRPGLog(`${data.character.name} has joined the world`, 'info');
+            }
+        }
+    });
+    
+    rpgSocket.on('characterLeft', (data) => {
+        if (rpgEngine) {
+            rpgEngine.removeCharacter(data.characterId);
+            addRPGLog(`${data.characterName} has left the world`, 'info');
+        }
+    });
+    
+    rpgSocket.on('characterMoved', (data) => {
+        if (rpgEngine) {
+            rpgEngine.updateCharacter(data.character);
+        }
+    });
+    
+    rpgSocket.on('serverTick', (tickData) => {
+        if (rpgEngine) {
+            rpgEngine.currentTick = tickData.tick;
+            tickCount.textContent = tickData.tick;
+        }
+    });
+    
+    rpgSocket.on('connect_error', (error) => {
+        addRPGLog(`World connection error: ${error.message}`, 'error');
+    });
+}
+
+function disconnectRPG() {
+    if (rpgSocket) {
+        rpgSocket.disconnect();
+        rpgSocket = null;
+    }
+    stopRPGLoop();
+}
+
+function startRPGLoop() {
+    if (rpgAnimationId) {
+        cancelAnimationFrame(rpgAnimationId);
+    }
+    
+    // Start tick system
+    rpgEngine.startTickSystem();
+    
+    function rpgLoop() {
+        if (rpgEngine && rpgRenderer && isRPGConnected) {
+            // Render current state
+            rpgRenderer.render(rpgEngine);
+            
+            // Update displays
+            fpsDisplay.textContent = rpgRenderer.getFPS();
+            
+            // Update character info
+            const myChar = rpgEngine.getMyCharacter();
+            if (myChar) {
+                characterPos.textContent = `${myChar.x}, ${myChar.y}`;
+                movingStatus.textContent = myChar.isMoving ? 'Moving' : 'Idle';
+            }
+        }
+        
+        rpgAnimationId = requestAnimationFrame(rpgLoop);
+    }
+    
+    rpgLoop();
+}
+
+function stopRPGLoop() {
+    if (rpgAnimationId) {
+        cancelAnimationFrame(rpgAnimationId);
+        rpgAnimationId = null;
+    }
+}
+
+function handleCanvasClick(event) {
+    if (!isRPGConnected || !rpgEngine) {
+        addRPGLog('Not connected to world', 'error');
+        return;
+    }
+    
+    const rect = canvas.getBoundingClientRect();
+    const success = rpgEngine.handleMouseClick(event.clientX, event.clientY, rect);
+    
+    if (!success) {
+        addRPGLog('Cannot move to that location', 'error');
+    }
+}
+
+function sendMovementCommand(targetX, targetY) {
+    if (!isRPGConnected || !rpgSocket) {
+        addRPGLog('Not connected to world', 'error');
+        return;
+    }
+    
+    const myChar = rpgEngine.getMyCharacter();
+    if (!myChar) {
+        addRPGLog('Character not found', 'error');
+        return;
+    }
+    
+    rpgSocket.emit('moveCharacter', {
+        fromX: myChar.x,
+        fromY: myChar.y,
+        toX: targetX,
+        toY: targetY
+    });
+    
+    addRPGLog(`Moving to (${targetX}, ${targetY})`, 'info');
+}
+
+function respawnCharacter() {
+    if (!isRPGConnected || !rpgSocket) {
+        addRPGLog('Not connected to world', 'error');
+        return;
+    }
+    
+    rpgSocket.emit('respawnCharacter');
+    addRPGLog('Respawning character...', 'info');
+}
+
+function updateRPGStatus(connected) {
+    if (connected) {
+        rpgStatus.textContent = 'Connected';
+        rpgStatus.className = 'status-connected';
+    } else {
+        rpgStatus.textContent = 'Disconnected';
+        rpgStatus.className = 'status-disconnected';
+        userCount.textContent = '0';
+        tickCount.textContent = '0';
+        characterPos.textContent = '0, 0';
+        movingStatus.textContent = 'Idle';
+    }
+}
+
+function enableRPGControls(enabled) {
+    respawnBtn.disabled = !enabled;
+}
+
+function addRPGLog(message, type = 'info') {
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry ${type}`;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    logEntry.textContent = `[${timestamp}] ${message}`;
+    
+    rpgLogContainer.appendChild(logEntry);
+    rpgLogContainer.scrollTop = rpgLogContainer.scrollHeight;
+    
+    // Keep only last 30 log entries
+    while (rpgLogContainer.children.length > 30) {
+        rpgLogContainer.removeChild(rpgLogContainer.firstChild);
+    }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    initializeRPG();
+    addRPGLog('Medieval Fantasy World ready', 'info');
+    addRPGLog('Enter the world to begin your adventure with other players', 'info');
+});
