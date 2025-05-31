@@ -3,10 +3,6 @@
  * Phaser 게임을 초기화하고 시작합니다.
  */
 
-// 전역 변수들
-let game = null;
-let networkManager = null;
-
 /**
  * 게임 초기화 및 시작
  */
@@ -14,7 +10,7 @@ function initializeGame() {
     console.log('🚀 Initializing Medieval.io...');
     
     try {
-        // Phaser 게임 인스턴스 생성
+        // Phaser 게임 인스턴스 생성 (전역 변수 game은 game-config.js에서 선언됨)
         game = new Phaser.Game(phaserConfig);
         
         // 게임 이벤트 리스너 설정

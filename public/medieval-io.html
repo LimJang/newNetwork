@@ -160,14 +160,22 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
     <!-- Socket.IO -->
     <script src="/socket.io/socket.io.js"></script>
-    <!-- Game Scripts -->
-    <script src="/medieval-io/game-config.js"></script>
+    
+    <!-- Game Scripts - 올바른 로딩 순서 -->
+    <!-- 1. 기본 유틸리티들 먼저 -->
     <script src="/medieval-io/sprites.js"></script>
     <script src="/medieval-io/network-manager.js"></script>
     <script src="/medieval-io/player.js"></script>
+    
+    <!-- 2. 씬들 정의 -->
     <script src="/medieval-io/scenes/menu-scene.js"></script>
     <script src="/medieval-io/scenes/game-scene.js"></script>
     <script src="/medieval-io/scenes/gameover-scene.js"></script>
+    
+    <!-- 3. 게임 설정 (씬들이 정의된 후) -->
+    <script src="/medieval-io/game-config.js"></script>
+    
+    <!-- 4. 메인 게임 시작 -->
     <script src="/medieval-io/main.js"></script>
 
     <script>
