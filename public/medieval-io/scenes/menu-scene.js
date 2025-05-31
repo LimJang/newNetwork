@@ -9,6 +9,8 @@ class MenuScene extends Phaser.Scene {
         this.connectionAttempts = 0;
         this.maxConnectionAttempts = 3;
         this.gameStartRequested = false; // 게임 시작 요청 상태
+        this.isDestroyed = false; // 씬 파괴 상태 추적
+        this.networkEventCallbacks = []; // 네트워크 이벤트 콜백 참조 저장
     }
     
     /**
@@ -16,6 +18,8 @@ class MenuScene extends Phaser.Scene {
      */
     create() {
         console.log('🏰 MenuScene created');
+        
+        this.isDestroyed = false;
         
         // 배경 설정
         this.cameras.main.setBackgroundColor(COLORS.BACKGROUND);
@@ -29,8 +33,8 @@ class MenuScene extends Phaser.Scene {
         // 네트워크 매니저 초기화
         if (!networkManager) {
             networkManager = new NetworkManager();
-            this.setupNetworkEvents();
         }
+        this.setupNetworkEvents();
         
         // 키보드 입력 설정
         this.setupKeyboardInput();
@@ -48,7 +52,9 @@ class MenuScene extends Phaser.Scene {
         
         // Spacebar 입력 이벤트
         this.input.keyboard.on('keydown-SPACE', () => {
-            this.handleSpacebarPress();
+            if (!this.isDestroyed) {
+                this.handleSpacebarPress();
+            }
         });
     }
     
@@ -56,6 +62,8 @@ class MenuScene extends Phaser.Scene {
      * 스페이스바 입력을 처리합니다
      */
     handleSpacebarPress() {
+        if (this.isDestroyed) return;
+        
         if (!networkManager.isConnectedToServer()) {
             this.updateStatus('Not connected to server!', '#ff0000');
             return;
@@ -157,14 +165,22 @@ class MenuScene extends Phaser.Scene {
         this.startButton.setOrigin(0.5);
         this.startButton.setVisible(false);
         this.startButton.setInteractive({ useHandCursor: true });
-        this.startButton.on('pointerdown', () => this.handleSpacebarPress());
+        this.startButton.on('pointerdown', () => {
+            if (!this.isDestroyed) {
+                this.handleSpacebarPress();
+            }
+        });
         this.startButton.on('pointerover', () => {
-            this.startButton.setFill('#ffffff');
-            this.startButton.setScale(1.1);
+            if (!this.isDestroyed) {
+                this.startButton.setFill('#ffffff');
+                this.startButton.setScale(1.1);
+            }
         });
         this.startButton.on('pointerout', () => {
-            this.startButton.setFill('#90ee90');
-            this.startButton.setScale(1.0);
+            if (!this.isDestroyed) {
+                this.startButton.setFill('#90ee90');
+                this.startButton.setScale(1.0);
+            }
         });
         
         // 재연결 버튼 (연결 실패시 표시)
@@ -178,14 +194,22 @@ class MenuScene extends Phaser.Scene {
         this.reconnectButton.setOrigin(0.5);
         this.reconnectButton.setVisible(false);
         this.reconnectButton.setInteractive({ useHandCursor: true });
-        this.reconnectButton.on('pointerdown', () => this.attemptConnection());
+        this.reconnectButton.on('pointerdown', () => {
+            if (!this.isDestroyed) {
+                this.attemptConnection();
+            }
+        });
         this.reconnectButton.on('pointerover', () => {
-            this.reconnectButton.setFill('#ff7f7f');
-            this.reconnectButton.setScale(1.1);
+            if (!this.isDestroyed) {
+                this.reconnectButton.setFill('#ff7f7f');
+                this.reconnectButton.setScale(1.1);
+            }
         });
         this.reconnectButton.on('pointerout', () => {
-            this.reconnectButton.setFill('#ff6347');
-            this.reconnectButton.setScale(1.0);
+            if (!this.isDestroyed) {
+                this.reconnectButton.setFill('#ff6347');
+                this.reconnectButton.setScale(1.0);
+            }
         });
         
         // 설명 텍스트
@@ -262,42 +286,59 @@ class MenuScene extends Phaser.Scene {
      * 네트워크 이벤트를 설정합니다
      */
     setupNetworkEvents() {
-        // 연결 성공
-        networkManager.on('connected', () => {
-            this.onConnectionSuccess();
-        });
+        // 콜백 함수들 정의 (참조 저장을 위해)
+        const connectedCallback = () => {
+            if (!this.isDestroyed) this.onConnectionSuccess();
+        };
         
-        // 연결 실패
-        networkManager.on('disconnected', (reason) => {
-            this.onConnectionFailed(reason);
-        });
+        const disconnectedCallback = (reason) => {
+            if (!this.isDestroyed) this.onConnectionFailed(reason);
+        };
         
-        // 게임 상태 업데이트
-        networkManager.on('gameStateUpdate', (gameState) => {
-            this.updatePlayerCount(Object.keys(gameState.players).length);
-        });
+        const gameStateUpdateCallback = (gameState) => {
+            if (!this.isDestroyed) this.updatePlayerCount(Object.keys(gameState.players).length);
+        };
         
-        // 게임 시작 이벤트
-        networkManager.on('gameStartInitiated', (data) => {
-            this.onGameStartInitiated(data);
-        });
+        const gameStartInitiatedCallback = (data) => {
+            if (!this.isDestroyed) this.onGameStartInitiated(data);
+        };
         
-        // 게임 시작 완료 이벤트
-        networkManager.on('gameStarted', (data) => {
-            this.onGameStarted(data);
-        });
+        const gameStartedCallback = (data) => {
+            if (!this.isDestroyed) this.onGameStarted(data);
+        };
         
-        // 게임 시작 이미 요청됨 알림
-        networkManager.on('gameStartAlreadyRequested', (data) => {
-            console.log('⚠️ Server says:', data.message);
-            this.updateStatus('Game start already in progress', '#ffaa00');
-        });
+        const gameStartAlreadyRequestedCallback = (data) => {
+            if (!this.isDestroyed) {
+                console.log('⚠️ Server says:', data.message);
+                this.updateStatus('Game start already in progress', '#ffaa00');
+            }
+        };
+        
+        // 이벤트 리스너 등록
+        networkManager.on('connected', connectedCallback);
+        networkManager.on('disconnected', disconnectedCallback);
+        networkManager.on('gameStateUpdate', gameStateUpdateCallback);
+        networkManager.on('gameStartInitiated', gameStartInitiatedCallback);
+        networkManager.on('gameStarted', gameStartedCallback);
+        networkManager.on('gameStartAlreadyRequested', gameStartAlreadyRequestedCallback);
+        
+        // 콜백 참조 저장 (cleanup을 위해)
+        this.networkEventCallbacks = [
+            { event: 'connected', callback: connectedCallback },
+            { event: 'disconnected', callback: disconnectedCallback },
+            { event: 'gameStateUpdate', callback: gameStateUpdateCallback },
+            { event: 'gameStartInitiated', callback: gameStartInitiatedCallback },
+            { event: 'gameStarted', callback: gameStartedCallback },
+            { event: 'gameStartAlreadyRequested', callback: gameStartAlreadyRequestedCallback }
+        ];
     }
     
     /**
      * 서버 연결을 시도합니다
      */
     attemptConnection() {
+        if (this.isDestroyed) return;
+        
         console.log(`🔌 Connection attempt ${this.connectionAttempts + 1}/${this.maxConnectionAttempts}`);
         
         this.connectionAttempts++;
@@ -310,7 +351,7 @@ class MenuScene extends Phaser.Scene {
         
         // 연결 시간 초과 처리
         this.connectionTimeout = this.time.delayedCall(5000, () => {
-            if (!networkManager.isConnectedToServer()) {
+            if (!this.isDestroyed && !networkManager.isConnectedToServer()) {
                 this.onConnectionFailed('Timeout');
             }
         });
@@ -320,6 +361,8 @@ class MenuScene extends Phaser.Scene {
      * 연결 성공 처리
      */
     onConnectionSuccess() {
+        if (this.isDestroyed) return;
+        
         console.log('✅ Connected to server successfully');
         
         if (this.connectionTimeout) {
@@ -343,6 +386,8 @@ class MenuScene extends Phaser.Scene {
      * @param {string} reason - 실패 사유
      */
     onConnectionFailed(reason) {
+        if (this.isDestroyed) return;
+        
         console.log('❌ Connection failed:', reason);
         
         if (this.connectionTimeout) {
@@ -357,7 +402,11 @@ class MenuScene extends Phaser.Scene {
             this.connectionAttempts = 0;
         } else {
             this.updateStatus(`Retrying... (${this.connectionAttempts}/${this.maxConnectionAttempts})`, '#ff6347');
-            this.time.delayedCall(2000, () => this.attemptConnection());
+            this.time.delayedCall(2000, () => {
+                if (!this.isDestroyed) {
+                    this.attemptConnection();
+                }
+            });
         }
     }
     
@@ -366,6 +415,8 @@ class MenuScene extends Phaser.Scene {
      * @param {Object} data - 게임 시작 데이터
      */
     onGameStartInitiated(data) {
+        if (this.isDestroyed) return;
+        
         console.log('🎮 Game start initiated by server!', data);
         
         this.updateStatus(`Game starting... (${data.countdown}s)`, '#ffd700');
@@ -381,6 +432,8 @@ class MenuScene extends Phaser.Scene {
      * @param {Object} data - 게임 시작 완료 데이터
      */
     onGameStarted(data) {
+        if (this.isDestroyed) return;
+        
         console.log('🎮 Game started by server!', data);
         this.startGame();
     }
@@ -390,6 +443,8 @@ class MenuScene extends Phaser.Scene {
      * @param {number} seconds - 카운트다운 초
      */
     startCountdown(seconds) {
+        if (this.isDestroyed) return;
+        
         let remaining = seconds;
         
         const countdownText = this.add.text(GAME_CONFIG.WIDTH / 2, GAME_CONFIG.HEIGHT / 2 - 100, remaining.toString(), {
@@ -405,6 +460,8 @@ class MenuScene extends Phaser.Scene {
         const countdownTimer = this.time.addEvent({
             delay: 1000,
             callback: () => {
+                if (this.isDestroyed) return;
+                
                 remaining--;
                 if (remaining > 0) {
                     countdownText.setText(remaining.toString());
@@ -433,8 +490,14 @@ class MenuScene extends Phaser.Scene {
      * @param {string} color - 텍스트 색상
      */
     updateStatus(text, color) {
-        this.statusText.setText(text);
-        this.statusText.setFill(color);
+        if (this.isDestroyed || !this.statusText || !this.statusText.active) return;
+        
+        try {
+            this.statusText.setText(text);
+            this.statusText.setFill(color);
+        } catch (error) {
+            console.warn('Status text update failed:', error);
+        }
     }
     
     /**
@@ -442,11 +505,17 @@ class MenuScene extends Phaser.Scene {
      * @param {boolean} show - 표시 여부
      */
     showSpinner(show) {
-        this.spinner.setVisible(show);
-        if (show) {
-            this.spinnerTween.resume();
-        } else {
-            this.spinnerTween.pause();
+        if (this.isDestroyed || !this.spinner) return;
+        
+        try {
+            this.spinner.setVisible(show);
+            if (show && this.spinnerTween) {
+                this.spinnerTween.resume();
+            } else if (this.spinnerTween) {
+                this.spinnerTween.pause();
+            }
+        } catch (error) {
+            console.warn('Spinner update failed:', error);
         }
     }
     
@@ -455,6 +524,8 @@ class MenuScene extends Phaser.Scene {
      * @param {number} count - 플레이어 수
      */
     updatePlayerCount(count) {
+        if (this.isDestroyed) return;
+        
         if (count > 1) {
             this.updateStatus(`${count} knights ready! Press SPACEBAR to start`, '#32cd32');
         }
@@ -464,13 +535,38 @@ class MenuScene extends Phaser.Scene {
      * 게임을 시작합니다
      */
     startGame() {
+        if (this.isDestroyed) return;
+        
         console.log('🎮 Starting Medieval.io Battle!');
+        
+        // 씬 파괴 플래그 설정
+        this.isDestroyed = true;
+        
+        // 네트워크 이벤트 리스너 정리
+        this.cleanupNetworkEvents();
         
         // 게임 씬으로 전환
         this.cameras.main.fadeOut(1000, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
             this.scene.start('GameScene');
         });
+    }
+    
+    /**
+     * 네트워크 이벤트 리스너들을 정리합니다
+     */
+    cleanupNetworkEvents() {
+        // 등록된 네트워크 이벤트 콜백들 제거
+        for (const { event, callback } of this.networkEventCallbacks) {
+            if (networkManager && networkManager.eventListeners && networkManager.eventListeners.has(event)) {
+                const listeners = networkManager.eventListeners.get(event);
+                const index = listeners.indexOf(callback);
+                if (index > -1) {
+                    listeners.splice(index, 1);
+                }
+            }
+        }
+        this.networkEventCallbacks = [];
     }
     
     /**
@@ -486,6 +582,14 @@ class MenuScene extends Phaser.Scene {
      * 씬 파괴 시 호출
      */
     destroy() {
+        console.log('🗑️ MenuScene destroyed');
+        
+        this.isDestroyed = true;
+        
+        // 네트워크 이벤트 정리
+        this.cleanupNetworkEvents();
+        
+        // 타이머 정리
         if (this.connectionTimeout) {
             this.connectionTimeout.destroy();
         }
