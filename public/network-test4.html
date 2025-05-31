@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medieval RPG Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="medieval-container">
+        <header class="castle-header">
+            <h1 class="title-main">Medieval RPG Demo</h1>
+            <h2 class="title-sub">중세 RPG 데모</h2>
+        </header>
+        
+        <main class="content-area">
+            <div class="scroll-panel rpg-panel">
+                <div class="panel-header">
+                    <h3>Tick-Based Fantasy World</h3>
+                    <p class="subtitle">틱 기반 판타지 월드</p>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="status-area">
+                        <div class="connection-status">
+                            <span class="status-label">World Server:</span>
+                            <span id="rpgStatus" class="status-disconnected">Disconnected</span>
+                        </div>
+                        <div class="user-count">
+                            <span class="status-label">Online Players:</span>
+                            <span id="userCount">0</span>
+                        </div>
+                        <div class="tick-status">
+                            <span class="status-label">Server Tick:</span>
+                            <span id="tickCount" class="status-info">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="rpg-container">
+                        <canvas id="rpgCanvas" width="800" height="600"></canvas>
+                        <div class="canvas-overlay">
+                            <div class="fps-counter">FPS: <span id="fpsDisplay">0</span></div>
+                            <div class="character-info">
+                                <div>Character: <span id="characterName">Civilian</span></div>
+                                <div>Position: <span id="characterPos">0, 0</span></div>
+                                <div>Moving: <span id="movingStatus">Idle</span></div>
+                            </div>
+                        </div>
+                        <div class="map-grid"></div>
+                    </div>
+                    
+                    <div class="rpg-controls">
+                        <button id="connectRPGBtn" class="medieval-button">
+                            <span class="button-text">Enter Fantasy World</span>
+                            <span class="button-subtext">판타지 세계 입장</span>
+                        </button>
+                        
+                        <button id="respawnBtn" class="medieval-button" disabled>
+                            <span class="button-text">Respawn Character</span>
+                            <span class="button-subtext">캐릭터 리스폰</span>
+                        </button>
+                        
+                        <div class="control-instructions">
+                            <h4>Game Controls / 게임 조작법</h4>
+                            <div class="control-info">
+                                <div class="control-item">
+                                    <span class="key">🖱️ Mouse Click</span>
+                                    <span class="action">Move to Location / 위치로 이동</span>
+                                </div>
+                                <div class="control-item">
+                                    <span class="key">⏱️ Tick System</span>
+                                    <span class="action">Synchronized Movement / 동기화된 움직임</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rpg-log">
+                        <h4>World Log / 월드 로그</h4>
+                        <div id="rpgLogContainer" class="log-container">
+                            <div class="log-entry">Medieval RPG world ready. Click to enter!</div>
+                        </div>
+                    </div>
+                    
+                    <div class="navigation-area">
+                        <button class="medieval-button secondary" onclick="goToBoxingTest()">
+                            <span class="button-text">← Boxing Test</span>
+                            <span class="button-subtext">복싱 테스트로</span>
+                        </button>
+                        
+                        <button class="medieval-button secondary" onclick="goHome()">
+                            <span class="button-text">← Laboratory</span>
+                            <span class="button-subtext">연구실로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="rpg-sprites.js"></script>
+    <script src="rpg-engine.js"></script>
+    <script src="network-test4.js"></script>
+    
+    <script>
+        function goHome() {
+            window.location.href = '/';
+        }
+        
+        function goToBoxingTest() {
+            window.location.href = '/network-test3';
+        }
+    </script>
+</body>
+</html>

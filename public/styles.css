@@ -596,38 +596,174 @@ body {
     color: var(--primary-gold);
 }
 
-/* Enhanced responsive design for boxing */
+/* RPG Panel Specific Styles */
+.rpg-panel {
+    max-width: 1100px;
+}
+
+.rpg-container {
+    position: relative;
+    margin: 20px 0;
+    text-align: center;
+}
+
+#rpgCanvas {
+    border: 4px solid var(--medieval-brown);
+    border-radius: 12px;
+    background: var(--dark-stone);
+    box-shadow: 
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        inset 0 0 20px rgba(139, 69, 19, 0.2);
+    display: block;
+    margin: 0 auto;
+    cursor: crosshair;
+}
+
+.map-grid {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    pointer-events: none;
+    opacity: 0.1;
+    background-image: 
+        linear-gradient(to right, var(--primary-gold) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--primary-gold) 1px, transparent 1px);
+    background-size: 32px 32px;
+}
+
+.canvas-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(47, 47, 47, 0.9);
+    color: var(--parchment);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-family: 'Noto Serif KR', monospace;
+    font-size: 0.9rem;
+    pointer-events: none;
+    border: 1px solid var(--primary-gold);
+}
+
+.character-info {
+    margin-top: 8px;
+}
+
+.character-info div {
+    margin-bottom: 3px;
+}
+
+.rpg-controls {
+    margin: 25px 0;
+    text-align: center;
+}
+
+.control-info {
+    margin-top: 15px;
+}
+
+.control-info .control-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: rgba(139, 69, 19, 0.1);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.control-info .control-item:hover {
+    background: rgba(212, 175, 55, 0.2);
+}
+
+.control-info .key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+    height: 35px;
+    background: var(--medieval-brown);
+    color: var(--parchment);
+    border: 2px solid var(--primary-gold);
+    border-radius: 6px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-right: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.tick-status {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.rpg-log {
+    margin-top: 25px;
+}
+
+.rpg-log h4 {
+    font-family: 'Cinzel', serif;
+    color: var(--medieval-brown);
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--medieval-brown);
+    padding-bottom: 5px;
+}
+
+/* Adventure-specific log styles */
+.log-entry.adventure {
+    color: var(--success-green);
+    font-weight: 600;
+}
+
+.log-entry.movement {
+    color: var(--primary-gold);
+}
+
+.log-entry.world {
+    color: var(--royal-red);
+    font-weight: 600;
+}
+
+/* Enhanced responsive design for RPG */
 @media (max-width: 768px) {
-    .boxing-panel {
+    .rpg-panel {
         margin: 10px;
     }
     
-    #boxingCanvas {
+    #rpgCanvas {
         width: 100%;
         max-width: 600px;
         height: auto;
     }
     
-    .controls-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
+    .map-grid {
+        width: 100%;
+        max-width: 600px;
+        height: auto;
     }
     
-    .control-item {
+    .canvas-overlay {
+        font-size: 0.8rem;
+        padding: 8px 12px;
+    }
+    
+    .control-info .control-item {
         flex-direction: column;
         text-align: center;
         padding: 12px;
     }
     
-    .key {
+    .control-info .key {
         margin-right: 0;
         margin-bottom: 8px;
-        min-width: 50px;
+        min-width: 140px;
         height: 40px;
-    }
-    
-    .action {
-        text-align: center;
     }
 }
 

@@ -105,6 +105,11 @@
                     </div>
                     
                     <div class="navigation-area">
+                        <button class="medieval-button" onclick="goToRPGTest()">
+                            <span class="button-text">RPG Demo →</span>
+                            <span class="button-subtext">RPG 데모로</span>
+                        </button>
+                        
                         <button class="medieval-button secondary" onclick="goToPhysicsTest()">
                             <span class="button-text">← Physics Test</span>
                             <span class="button-subtext">물리 테스트로</span>
@@ -131,6 +136,10 @@
         
         function goToPhysicsTest() {
             window.location.href = '/network-test2';
+        }
+        
+        function goToRPGTest() {
+            window.location.href = '/network-test4';
         }
     </script>
 </body>
