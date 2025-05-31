@@ -33,27 +33,26 @@ const engines = {
 // Initialize socket handler
 const socketHandler = new SocketHandler(io, engines);
 
-// Socket.io connection handling
-io.on('connection', (socket) => {
-  socketHandler.setupConnection(socket);
-});
-
-// Spacebar game start functionality
+// Global game start state
 let gameStartRequested = false;
 let gameStartTimeout = null;
 
-// Add spacebar game start event handler
+// Socket.io connection handling
 io.on('connection', (socket) => {
+  socketHandler.setupConnection(socket);
+  
+  // Spacebar game start event handler
   socket.on('requestGameStart', () => {
     console.log(`User ${socket.id} requested game start with spacebar`);
     
     if (!gameStartRequested) {
       gameStartRequested = true;
       
-      // Broadcast game start countdown
-      io.emit('gameStartCountdown', {
+      // Broadcast game start initiation
+      io.emit('gameStartInitiated', {
         message: 'Game starting in 3 seconds...',
-        countdown: 3
+        countdown: 3,
+        timestamp: Date.now()
       });
       
       // Start countdown
@@ -61,9 +60,10 @@ io.on('connection', (socket) => {
       const countdownInterval = setInterval(() => {
         countdown--;
         if (countdown > 0) {
-          io.emit('gameStartCountdown', {
+          io.emit('gameStartInitiated', {
             message: `Game starting in ${countdown} seconds...`,
-            countdown: countdown
+            countdown: countdown,
+            timestamp: Date.now()
           });
         } else {
           clearInterval(countdownInterval);
@@ -76,10 +76,11 @@ io.on('connection', (socket) => {
           
           console.log('Game started by spacebar request');
           
-          // Reset flag after 5 seconds
+          // Reset flag after 3 seconds
           setTimeout(() => {
             gameStartRequested = false;
-          }, 5000);
+            console.log('Game start flag reset - spacebar available again');
+          }, 3000);
         }
       }, 1000);
     } else {

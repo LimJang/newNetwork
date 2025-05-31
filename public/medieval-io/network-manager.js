@@ -109,10 +109,20 @@ class NetworkManager {
             this.emit('gameOver', gameOverData);
         });
         
-        // 🚀 게임 시작 이벤트
+        // 🚀 게임 시작 이벤트들
         this.socket.on('gameStartInitiated', (data) => {
             console.log('🎮 Game start initiated:', data);
             this.emit('gameStartInitiated', data);
+        });
+        
+        this.socket.on('gameStarted', (data) => {
+            console.log('🎮 Game started:', data);
+            this.emit('gameStarted', data);
+        });
+        
+        this.socket.on('gameStartAlreadyRequested', (data) => {
+            console.log('⚠️ Game start already requested:', data);
+            this.emit('gameStartAlreadyRequested', data);
         });
         
         // 핑 측정

@@ -75,6 +75,12 @@ class MenuScene extends Phaser.Scene {
         // UI 업데이트
         this.updateStatus('Starting game...', '#ffff00');
         this.showSpinner(true);
+        
+        // 3초 후 플래그 리셋 (서버와 동기화)
+        this.time.delayedCall(3000, () => {
+            this.gameStartRequested = false;
+            console.log('🔄 Client game start flag reset');
+        });
     }
     
     /**
@@ -275,6 +281,17 @@ class MenuScene extends Phaser.Scene {
         networkManager.on('gameStartInitiated', (data) => {
             this.onGameStartInitiated(data);
         });
+        
+        // 게임 시작 완료 이벤트
+        networkManager.on('gameStarted', (data) => {
+            this.onGameStarted(data);
+        });
+        
+        // 게임 시작 이미 요청됨 알림
+        networkManager.on('gameStartAlreadyRequested', (data) => {
+            console.log('⚠️ Server says:', data.message);
+            this.updateStatus('Game start already in progress', '#ffaa00');
+        });
     }
     
     /**
@@ -353,8 +370,19 @@ class MenuScene extends Phaser.Scene {
         
         this.updateStatus(`Game starting... (${data.countdown}s)`, '#ffd700');
         
-        // 카운트다운 시작
-        this.startCountdown(data.countdown);
+        // 카운트다운이 3일 때만 카운트다운 시작 (중복 방지)
+        if (data.countdown === 3) {
+            this.startCountdown(data.countdown);
+        }
+    }
+    
+    /**
+     * 게임 시작 완료를 처리합니다
+     * @param {Object} data - 게임 시작 완료 데이터
+     */
+    onGameStarted(data) {
+        console.log('🎮 Game started by server!', data);
+        this.startGame();
     }
     
     /**
@@ -392,15 +420,10 @@ class MenuScene extends Phaser.Scene {
                 } else {
                     countdownText.setText('FIGHT!');
                     countdownText.setFill('#ff0000');
-                    
-                    // 게임 시작!
-                    this.time.delayedCall(1000, () => {
-                        this.startGame();
-                    });
                 }
             },
             callbackScope: this,
-            repeat: seconds
+            repeat: seconds - 1 // seconds-1만큼 반복 (0에서 멈춤)
         });
     }
     
