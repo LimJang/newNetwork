@@ -62,6 +62,11 @@
                     </div>
                     
                     <div class="action-area">
+                        <button class="medieval-button" onclick="goToPhysicsTest()">
+                            <span class="button-text">Physics Sync Test →</span>
+                            <span class="button-subtext">물리 동기화 테스트로</span>
+                        </button>
+                        
                         <button class="medieval-button secondary" onclick="goHome()">
                             <span class="button-text">Return to Laboratory</span>
                             <span class="button-subtext">연구실로 돌아가기</span>
@@ -78,6 +83,10 @@
     <script>
         function goHome() {
             window.location.href = '/';
+        }
+        
+        function goToPhysicsTest() {
+            window.location.href = '/network-test2';
         }
     </script>
 </body>

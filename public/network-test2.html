@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Sync Testing Chamber</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="medieval-container">
+        <header class="castle-header">
+            <h1 class="title-main">Physics Sync Testing</h1>
+            <h2 class="title-sub">물리 동기화 테스트 구역</h2>
+        </header>
+        
+        <main class="content-area">
+            <div class="scroll-panel physics-panel">
+                <div class="panel-header">
+                    <h3>Real-time Physics Synchronization</h3>
+                    <p class="subtitle">실시간 물리 동기화 검증</p>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="status-area">
+                        <div class="connection-status">
+                            <span class="status-label">Physics Server:</span>
+                            <span id="physicsStatus" class="status-disconnected">Disconnected</span>
+                        </div>
+                        <div class="user-count">
+                            <span class="status-label">Active Physicists:</span>
+                            <span id="userCount">0</span>
+                        </div>
+                        <div class="sync-status">
+                            <span class="status-label">Sync Status:</span>
+                            <span id="syncStatus" class="status-info">Waiting...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="physics-container">
+                        <canvas id="physicsCanvas" width="600" height="400"></canvas>
+                        <div class="canvas-overlay">
+                            <div class="fps-counter">FPS: <span id="fpsDisplay">0</span></div>
+                            <div class="simulation-time">Time: <span id="timeDisplay">0.0s</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="physics-controls">
+                        <button id="connectPhysicsBtn" class="medieval-button">
+                            <span class="button-text">Connect to Physics Server</span>
+                            <span class="button-subtext">물리 서버 연결</span>
+                        </button>
+                        
+                        <button id="resetSimBtn" class="medieval-button" disabled>
+                            <span class="button-text">Reset Simulation</span>
+                            <span class="button-subtext">시뮬레이션 초기화</span>
+                        </button>
+                        
+                        <div class="force-controls">
+                            <h4>Apply Forces / 힘 적용</h4>
+                            <div class="force-buttons">
+                                <button id="forceLeftBtn" class="medieval-button small" disabled>
+                                    <span class="button-text">Push Left</span>
+                                </button>
+                                <button id="forceUpBtn" class="medieval-button small" disabled>
+                                    <span class="button-text">Push Up</span>
+                                </button>
+                                <button id="forceRightBtn" class="medieval-button small" disabled>
+                                    <span class="button-text">Push Right</span>
+                                </button>
+                                <button id="forceDownBtn" class="medieval-button small" disabled>
+                                    <span class="button-text">Push Down</span>
+                                </button>
+                            </div>
+                            <div class="ball-selector">
+                                <label for="ballSelect">Target Ball:</label>
+                                <select id="ballSelect" disabled>
+                                    <option value="0">Ball 1 (Red)</option>
+                                    <option value="1">Ball 2 (Green)</option>
+                                    <option value="2">Ball 3 (Blue)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="physics-log">
+                        <h4>Physics Events / 물리 이벤트</h4>
+                        <div id="physicsLogContainer" class="log-container">
+                            <div class="log-entry">Physics engine ready. Waiting for connection...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="navigation-area">
+                        <button class="medieval-button secondary" onclick="goToNetworkTest()">
+                            <span class="button-text">← Network Test</span>
+                            <span class="button-subtext">네트워크 테스트로</span>
+                        </button>
+                        
+                        <button class="medieval-button secondary" onclick="goHome()">
+                            <span class="button-text">← Laboratory</span>
+                            <span class="button-subtext">연구실로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="physics-engine.js"></script>
+    <script src="network-test2.js"></script>
+    
+    <script>
+        function goHome() {
+            window.location.href = '/';
+        }
+        
+        function goToNetworkTest() {
+            window.location.href = '/network-test';
+        }
+    </script>
+</body>
+</html>
