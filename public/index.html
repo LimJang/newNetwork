@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medieval Network Research</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="medieval-container">
+        <header class="castle-header">
+            <h1 class="title-main">Medieval Network Research</h1>
+            <h2 class="title-sub">중세 네트워크 연구소</h2>
+        </header>
+        
+        <main class="content-area">
+            <div class="scroll-panel">
+                <div class="panel-header">
+                    <h3>Research Laboratory</h3>
+                    <p class="subtitle">실시간 통신 연구 실험실</p>
+                </div>
+                
+                <div class="panel-content">
+                    <p class="description">
+                        Welcome to the Medieval Network Research Laboratory. Here we conduct experiments 
+                        on real-time communication technologies using ancient wisdom and modern innovation.
+                    </p>
+                    <p class="description korean">
+                        중세 네트워크 연구 실험실에 오신 것을 환영합니다. 
+                        고대의 지혜와 현대의 혁신을 결합하여 실시간 통신 기술을 연구합니다.
+                    </p>
+                    
+                    <div class="action-area">
+                        <button class="medieval-button" onclick="goToNetworkTest()">
+                            <span class="button-text">Enter Network Testing Chamber</span>
+                            <span class="button-subtext">네트워크 검증 구역 입장</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="castle-footer">
+            <p>&copy; 2025 Medieval Network Research Laboratory</p>
+        </footer>
+    </div>
+
+    <script>
+        function goToNetworkTest() {
+            window.location.href = '/network-test';
+        }
+    </script>
+</body>
+</html>

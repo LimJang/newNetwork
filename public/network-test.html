@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Testing Chamber</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="medieval-container">
+        <header class="castle-header">
+            <h1 class="title-main">Network Testing Chamber</h1>
+            <h2 class="title-sub">네트워크 검증 구역</h2>
+        </header>
+        
+        <main class="content-area">
+            <div class="scroll-panel">
+                <div class="panel-header">
+                    <h3>Real-time Communication Test</h3>
+                    <p class="subtitle">실시간 통신 테스트</p>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="status-area">
+                        <div class="connection-status">
+                            <span class="status-label">Connection Status:</span>
+                            <span id="connectionStatus" class="status-disconnected">Disconnected</span>
+                        </div>
+                        <div class="user-count">
+                            <span class="status-label">Connected Users:</span>
+                            <span id="userCount">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="test-controls">
+                        <button id="connectBtn" class="medieval-button">
+                            <span class="button-text">Connect to Server</span>
+                            <span class="button-subtext">서버 연결</span>
+                        </button>
+                        
+                        <button id="pingBtn" class="medieval-button" disabled>
+                            <span class="button-text">Test Ping</span>
+                            <span class="button-subtext">핑 테스트</span>
+                        </button>
+                        
+                        <div class="message-area">
+                            <input type="text" id="messageInput" placeholder="Enter test message / 테스트 메시지 입력" disabled>
+                            <button id="sendBtn" class="medieval-button small" disabled>
+                                <span class="button-text">Send</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="log-area">
+                        <h4>Test Log / 테스트 로그</h4>
+                        <div id="logContainer" class="log-container">
+                            <div class="log-entry">Waiting for connection...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-area">
+                        <button class="medieval-button secondary" onclick="goHome()">
+                            <span class="button-text">Return to Laboratory</span>
+                            <span class="button-subtext">연구실로 돌아가기</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="network-test.js"></script>
+    
+    <script>
+        function goHome() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
