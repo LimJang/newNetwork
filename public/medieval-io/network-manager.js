@@ -57,7 +57,7 @@ class NetworkManager {
             this.updateConnectionStatus(true, 'Connected');
             console.log('✅ Connected to server with ID:', this.playerId);
             
-            // 🔧 MenuScene에 연결 성공 알림
+            // MenuScene에 연결 성공 알림
             this.emit('connected');
             
             // 게임 참가 요청
@@ -109,6 +109,12 @@ class NetworkManager {
             this.emit('gameOver', gameOverData);
         });
         
+        // 🚀 게임 시작 이벤트
+        this.socket.on('gameStartInitiated', (data) => {
+            console.log('🎮 Game start initiated:', data);
+            this.emit('gameStartInitiated', data);
+        });
+        
         // 핑 측정
         this.socket.on('pong', (timestamp) => {
             this.ping = Date.now() - timestamp;
@@ -121,6 +127,22 @@ class NetworkManager {
                 this.socket.emit('ping', Date.now());
             }
         }, 5000);
+    }
+    
+    /**
+     * 게임 시작을 요청합니다
+     */
+    requestGameStart() {
+        if (!this.isConnected || !this.socket) {
+            console.warn('⚠️ Cannot request game start: not connected');
+            return;
+        }
+        
+        console.log('🚀 Requesting game start...');
+        this.socket.emit('requestGameStart', {
+            playerId: this.playerId,
+            timestamp: Date.now()
+        });
     }
     
     /**

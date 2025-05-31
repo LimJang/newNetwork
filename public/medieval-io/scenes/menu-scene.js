@@ -8,6 +8,7 @@ class MenuScene extends Phaser.Scene {
         super({ key: 'MenuScene' });
         this.connectionAttempts = 0;
         this.maxConnectionAttempts = 3;
+        this.gameStartRequested = false; // 게임 시작 요청 상태
     }
     
     /**
@@ -31,8 +32,49 @@ class MenuScene extends Phaser.Scene {
             this.setupNetworkEvents();
         }
         
+        // 키보드 입력 설정
+        this.setupKeyboardInput();
+        
         // 자동 연결 시도
         this.attemptConnection();
+    }
+    
+    /**
+     * 키보드 입력을 설정합니다
+     */
+    setupKeyboardInput() {
+        // Spacebar 키 등록
+        this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        
+        // Spacebar 입력 이벤트
+        this.input.keyboard.on('keydown-SPACE', () => {
+            this.handleSpacebarPress();
+        });
+    }
+    
+    /**
+     * 스페이스바 입력을 처리합니다
+     */
+    handleSpacebarPress() {
+        if (!networkManager.isConnectedToServer()) {
+            this.updateStatus('Not connected to server!', '#ff0000');
+            return;
+        }
+        
+        if (this.gameStartRequested) {
+            console.log('⚠️ Game start already requested');
+            return;
+        }
+        
+        this.gameStartRequested = true;
+        console.log('🚀 Game start requested by spacebar!');
+        
+        // 서버에 게임 시작 요청 전송
+        networkManager.requestGameStart();
+        
+        // UI 업데이트
+        this.updateStatus('Starting game...', '#ffff00');
+        this.showSpinner(true);
     }
     
     /**
@@ -76,30 +118,51 @@ class MenuScene extends Phaser.Scene {
         // 로딩 스피너
         this.createLoadingSpinner(centerX, centerY);
         
-        // 게임 시작 버튼 (연결 후 표시)
-        this.startButton = this.add.text(centerX, centerY + 50, 'START BATTLE', {
-            fontSize: '32px',
+        // 게임 시작 안내 (Spacebar)
+        this.spacebarText = this.add.text(centerX, centerY + 50, 'Press SPACEBAR to start battle!', {
+            fontSize: '24px',
             fontFamily: 'Cinzel',
             fill: '#32cd32',
             stroke: '#000000',
-            strokeThickness: 3,
+            strokeThickness: 2,
             fontWeight: 'bold'
+        });
+        this.spacebarText.setOrigin(0.5);
+        this.spacebarText.setVisible(false);
+        
+        // 반짝이는 효과 추가
+        this.tweens.add({
+            targets: this.spacebarText,
+            alpha: 0.5,
+            duration: 1000,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+        
+        // 게임 시작 버튼 (백업용 - 클릭으로도 시작 가능)
+        this.startButton = this.add.text(centerX, centerY + 100, 'or click here', {
+            fontSize: '16px',
+            fontFamily: 'Cinzel',
+            fill: '#90ee90',
+            stroke: '#000000',
+            strokeThickness: 1
         });
         this.startButton.setOrigin(0.5);
         this.startButton.setVisible(false);
         this.startButton.setInteractive({ useHandCursor: true });
-        this.startButton.on('pointerdown', () => this.startGame());
+        this.startButton.on('pointerdown', () => this.handleSpacebarPress());
         this.startButton.on('pointerover', () => {
-            this.startButton.setFill('#90ee90');
+            this.startButton.setFill('#ffffff');
             this.startButton.setScale(1.1);
         });
         this.startButton.on('pointerout', () => {
-            this.startButton.setFill('#32cd32');
+            this.startButton.setFill('#90ee90');
             this.startButton.setScale(1.0);
         });
         
         // 재연결 버튼 (연결 실패시 표시)
-        this.reconnectButton = this.add.text(centerX, centerY + 120, 'RECONNECT', {
+        this.reconnectButton = this.add.text(centerX, centerY + 150, 'RECONNECT', {
             fontSize: '20px',
             fontFamily: 'Cinzel',
             fill: '#ff6347',
@@ -129,7 +192,7 @@ class MenuScene extends Phaser.Scene {
         ];
         
         instructions.forEach((instruction, index) => {
-            this.add.text(centerX, centerY + 200 + (index * 25), instruction, {
+            this.add.text(centerX, centerY + 220 + (index * 25), instruction, {
                 fontSize: '16px',
                 fontFamily: 'Cinzel',
                 fill: '#b8860b',
@@ -207,6 +270,11 @@ class MenuScene extends Phaser.Scene {
         networkManager.on('gameStateUpdate', (gameState) => {
             this.updatePlayerCount(Object.keys(gameState.players).length);
         });
+        
+        // 게임 시작 이벤트
+        networkManager.on('gameStartInitiated', (data) => {
+            this.onGameStartInitiated(data);
+        });
     }
     
     /**
@@ -242,8 +310,11 @@ class MenuScene extends Phaser.Scene {
         }
         
         this.connectionAttempts = 0;
-        this.updateStatus('Connected! Ready to battle', '#32cd32');
+        this.updateStatus('Connected! Press SPACEBAR to start', '#32cd32');
         this.showSpinner(false);
+        
+        // Spacebar 안내 표시
+        this.spacebarText.setVisible(true);
         this.startButton.setVisible(true);
         
         // 환영 효과
@@ -271,6 +342,66 @@ class MenuScene extends Phaser.Scene {
             this.updateStatus(`Retrying... (${this.connectionAttempts}/${this.maxConnectionAttempts})`, '#ff6347');
             this.time.delayedCall(2000, () => this.attemptConnection());
         }
+    }
+    
+    /**
+     * 게임 시작 개시를 처리합니다
+     * @param {Object} data - 게임 시작 데이터
+     */
+    onGameStartInitiated(data) {
+        console.log('🎮 Game start initiated by server!', data);
+        
+        this.updateStatus(`Game starting... (${data.countdown}s)`, '#ffd700');
+        
+        // 카운트다운 시작
+        this.startCountdown(data.countdown);
+    }
+    
+    /**
+     * 카운트다운을 시작합니다
+     * @param {number} seconds - 카운트다운 초
+     */
+    startCountdown(seconds) {
+        let remaining = seconds;
+        
+        const countdownText = this.add.text(GAME_CONFIG.WIDTH / 2, GAME_CONFIG.HEIGHT / 2 - 100, remaining.toString(), {
+            fontSize: '128px',
+            fontFamily: 'Cinzel',
+            fill: '#ffd700',
+            stroke: '#000000',
+            strokeThickness: 6,
+            fontWeight: 'bold'
+        });
+        countdownText.setOrigin(0.5);
+        
+        const countdownTimer = this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                remaining--;
+                if (remaining > 0) {
+                    countdownText.setText(remaining.toString());
+                    
+                    // 카운트다운 효과
+                    this.tweens.add({
+                        targets: countdownText,
+                        scaleX: 1.5,
+                        scaleY: 1.5,
+                        duration: 200,
+                        yoyo: true
+                    });
+                } else {
+                    countdownText.setText('FIGHT!');
+                    countdownText.setFill('#ff0000');
+                    
+                    // 게임 시작!
+                    this.time.delayedCall(1000, () => {
+                        this.startGame();
+                    });
+                }
+            },
+            callbackScope: this,
+            repeat: seconds
+        });
     }
     
     /**
@@ -302,7 +433,7 @@ class MenuScene extends Phaser.Scene {
      */
     updatePlayerCount(count) {
         if (count > 1) {
-            this.updateStatus(`${count} knights ready to battle!`, '#32cd32');
+            this.updateStatus(`${count} knights ready! Press SPACEBAR to start`, '#32cd32');
         }
     }
     
@@ -310,11 +441,6 @@ class MenuScene extends Phaser.Scene {
      * 게임을 시작합니다
      */
     startGame() {
-        if (!networkManager.isConnectedToServer()) {
-            this.updateStatus('Not connected to server!', '#ff0000');
-            return;
-        }
-        
         console.log('🎮 Starting Medieval.io Battle!');
         
         // 게임 씬으로 전환
