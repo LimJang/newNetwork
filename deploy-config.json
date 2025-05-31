@@ -1,0 +1,31 @@
+{
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "deploy": "git add . && git commit -m 'Deploy update' && git push origin main",
+    "test": "node server.js",
+    "postinstall": "echo 'Dependencies installed successfully!'",
+    "logs": "echo 'Checking server logs...'",
+    "status": "echo 'Server status check'"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LimJang/newNetwork.git"
+  },
+  "keywords": [
+    "websocket",
+    "multiplayer",
+    "game",
+    "medieval",
+    "networking",
+    "socket.io",
+    "realtime"
+  ],
+  "author": "LimJang",
+  "license": "MIT",
+  "description": "Medieval themed multiplayer game research project with real-time networking"
+}
