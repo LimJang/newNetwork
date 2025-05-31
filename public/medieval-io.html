@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medieval.io - Battle Royale</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Game-specific styles */
+        .game-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2c1810 0%, #4a3427 50%, #2c1810 100%);
+            overflow: hidden;
+        }
+        
+        .game-ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 1000;
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+        }
+        
+        .game-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border: 2px solid #8b4513;
+            border-radius: 5px;
+        }
+        
+        .player-info {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #b8860b;
+        }
+        
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #d4af37;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dc143c;
+        }
+        
+        .status-indicator.connected {
+            background: #32cd32;
+        }
+        
+        .game-canvas {
+            border: 3px solid #8b4513;
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
+        }
+        
+        .controls-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 2px solid #8b4513;
+            border-radius: 5px;
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+        }
+        
+        .controls-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #b8860b;
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Game UI Overlay -->
+        <div class="game-ui">
+            <div class="game-stats">
+                <div class="player-info">
+                    <div class="stat-item">
+                        <span class="stat-label">Health</span>
+                        <span class="stat-value" id="health">100</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Players</span>
+                        <span class="stat-value" id="playerCount">1</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Alive</span>
+                        <span class="stat-value" id="aliveCount">1</span>
+                    </div>
+                </div>
+                <div class="connection-status">
+                    <div class="status-indicator" id="connectionStatus"></div>
+                    <span id="connectionText">Disconnected</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Back Button -->
+        <button class="medieval-button back-button" onclick="goBack()">
+            <span class="button-text">Return to Laboratory</span>
+        </button>
+        
+        <!-- Game Canvas (Phaser will inject here) -->
+        <div id="game-container"></div>
+        
+        <!-- Controls Information -->
+        <div class="controls-info">
+            <div class="controls-title">CONTROLS</div>
+            <div>WASD - Move your knight</div>
+            <div>Mouse - Aim and attack</div>
+            <div>Space - Special ability</div>
+        </div>
+    </div>
+
+    <!-- Phaser 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Game Scripts -->
+    <script src="medieval-io/game-config.js"></script>
+    <script src="medieval-io/sprites.js"></script>
+    <script src="medieval-io/network-manager.js"></script>
+    <script src="medieval-io/player.js"></script>
+    <script src="medieval-io/scenes/menu-scene.js"></script>
+    <script src="medieval-io/scenes/game-scene.js"></script>
+    <script src="medieval-io/scenes/gameover-scene.js"></script>
+    <script src="medieval-io/main.js"></script>
+
+    <script>
+        function goBack() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
