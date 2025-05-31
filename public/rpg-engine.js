@@ -29,4 +29,405 @@ class RPGEngine {
                 // Border trees
                 if (x === 0 || x === this.mapWidth - 1 || y === 0 || y === this.mapHeight - 1) {
                     row.push('tree');
-                }\n                // Random trees\n                else if (Math.random() < 0.05 && !(x >= 10 && x <= 15 && y >= 8 && y <= 10)) {\n                    row.push('tree');\n                }\n                // Stone path in center\n                else if ((x >= 10 && x <= 15 && y >= 8 && y <= 10) || \n                        (x >= 12 && x <= 13 && y >= 5 && y <= 13)) {\n                    row.push('stone');\n                }\n                // Default grass\n                else {\n                    row.push('grass');\n                }\n            }\n            this.map.push(row);\n        }\n    }\n    \n    setupMouseHandling() {\n        this.targetPosition = null;\n        this.mouseMoveCallback = null;\n    }\n    \n    setMouseMoveCallback(callback) {\n        this.mouseMoveCallback = callback;\n    }\n    \n    handleMouseClick(mouseX, mouseY, canvasRect) {\n        // Convert mouse coordinates to tile coordinates\n        const tileX = Math.floor((mouseX - canvasRect.left) / this.tileSize);\n        const tileY = Math.floor((mouseY - canvasRect.top) / this.tileSize);\n        \n        // Check if click is within map bounds and not on a tree\n        if (tileX >= 0 && tileX < this.mapWidth && \n            tileY >= 0 && tileY < this.mapHeight &&\n            this.map[tileY][tileX] !== 'tree') {\n            \n            this.targetPosition = { x: tileX, y: tileY };\n            \n            // Send movement command to server\n            if (this.mouseMoveCallback) {\n                this.mouseMoveCallback(tileX, tileY);\n            }\n            \n            return true;\n        }\n        \n        return false;\n    }\n    \n    startTickSystem() {\n        this.stopTickSystem();\n        \n        this.tickTimer = setInterval(() => {\n            this.processTick();\n        }, this.tickRate);\n    }\n    \n    stopTickSystem() {\n        if (this.tickTimer) {\n            clearInterval(this.tickTimer);\n            this.tickTimer = null;\n        }\n    }\n    \n    processTick() {\n        this.currentTick++;\n        \n        // Update animation frame every tick\n        this.animationFrame = Math.floor(this.currentTick / 2) % 2;\n        \n        // Process character movements\n        for (let [characterId, character] of this.characters) {\n            this.updateCharacterMovement(character);\n        }\n    }\n    \n    updateCharacterMovement(character) {\n        if (character.movementQueue && character.movementQueue.length > 0) {\n            const nextMove = character.movementQueue[0];\n            const currentTime = Date.now();\n            \n            // Check if enough time has passed for the next movement step\n            if (currentTime >= nextMove.executeTime) {\n                character.x = nextMove.x;\n                character.y = nextMove.y;\n                character.movementQueue.shift();\n                \n                // Update character state\n                if (character.movementQueue.length === 0) {\n                    character.isMoving = false;\n                    character.direction = character.direction || 'down';\n                } else {\n                    character.isMoving = true;\n                    // Calculate direction based on next movement\n                    const next = character.movementQueue[0];\n                    character.direction = this.calculateDirection(character.x, character.y, next.x, next.y);\n                }\n            }\n        }\n    }\n    \n    calculateDirection(fromX, fromY, toX, toY) {\n        const dx = toX - fromX;\n        const dy = toY - fromY;\n        \n        if (Math.abs(dx) > Math.abs(dy)) {\n            return dx > 0 ? 'right' : 'left';\n        } else {\n            return dy > 0 ? 'down' : 'up';\n        }\n    }\n    \n    addCharacter(characterData) {\n        const character = {\n            id: characterData.id,\n            name: characterData.name || 'Civilian',\n            x: characterData.x || 12,\n            y: characterData.y || 9,\n            direction: characterData.direction || 'down',\n            isMoving: false,\n            movementQueue: [],\n            color: characterData.color || this.generateRandomColor(),\n            joinTime: Date.now()\n        };\n        \n        this.characters.set(characterData.id, character);\n        return character;\n    }\n    \n    removeCharacter(characterId) {\n        this.characters.delete(characterId);\n    }\n    \n    updateCharacter(characterData) {\n        const character = this.characters.get(characterData.id);\n        if (character) {\n            // Update character with server data\n            Object.assign(character, characterData);\n            \n            // Handle movement path\n            if (characterData.movementPath && characterData.movementPath.length > 0) {\n                character.movementQueue = characterData.movementPath.map((pos, index) => ({\n                    x: pos.x,\n                    y: pos.y,\n                    executeTime: Date.now() + (index * this.tickRate)\n                }));\n                character.isMoving = true;\n                \n                // Set initial direction\n                if (character.movementQueue.length > 0) {\n                    const firstMove = character.movementQueue[0];\n                    character.direction = this.calculateDirection(\n                        character.x, character.y, \n                        firstMove.x, firstMove.y\n                    );\n                }\n            }\n        }\n    }\n    \n    generateRandomColor() {\n        const colors = [\n            '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', \n            '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'\n        ];\n        return colors[Math.floor(Math.random() * colors.length)];\n    }\n    \n    getMyCharacter() {\n        return this.characters.get(this.myCharacterId);\n    }\n    \n    findPath(startX, startY, targetX, targetY) {\n        // Simple pathfinding - straight line for now\n        // In a full implementation, you'd use A* pathfinding\n        const path = [];\n        \n        let currentX = startX;\n        let currentY = startY;\n        \n        while (currentX !== targetX || currentY !== targetY) {\n            // Move one step closer to target\n            if (currentX < targetX) currentX++;\n            else if (currentX > targetX) currentX--;\n            \n            if (currentY < targetY) currentY++;\n            else if (currentY > targetY) currentY--;\n            \n            // Check if position is valid (not a tree)\n            if (this.map[currentY] && this.map[currentY][currentX] !== 'tree') {\n                path.push({ x: currentX, y: currentY });\n            } else {\n                // Hit obstacle, stop pathfinding\n                break;\n            }\n        }\n        \n        return path;\n    }\n    \n    getState() {\n        return {\n            characters: Array.from(this.characters.values()),\n            currentTick: this.currentTick,\n            mapData: this.map\n        };\n    }\n    \n    setState(state) {\n        if (state.characters) {\n            // Update all characters\n            const newCharacters = new Map();\n            \n            state.characters.forEach(charData => {\n                if (this.characters.has(charData.id)) {\n                    // Update existing character\n                    this.updateCharacter(charData);\n                    newCharacters.set(charData.id, this.characters.get(charData.id));\n                } else {\n                    // Add new character\n                    const newChar = this.addCharacter(charData);\n                    newCharacters.set(charData.id, newChar);\n                }\n            });\n            \n            this.characters = newCharacters;\n        }\n        \n        if (state.currentTick !== undefined) {\n            this.currentTick = state.currentTick;\n        }\n    }\n}\n\n// RPG Renderer\nclass RPGRenderer {\n    constructor(canvas) {\n        this.canvas = canvas;\n        this.ctx = canvas.getContext('2d');\n        this.sprites = new RPGSprites();\n        this.fps = 0;\n        this.frameCount = 0;\n        this.lastFpsTime = 0;\n        \n        // Camera system\n        this.cameraX = 0;\n        this.cameraY = 0;\n    }\n    \n    render(rpgEngine) {\n        // Clear canvas\n        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);\n        \n        // Update camera to follow player\n        this.updateCamera(rpgEngine);\n        \n        // Render map\n        this.renderMap(rpgEngine);\n        \n        // Render target position\n        this.renderTarget(rpgEngine);\n        \n        // Render characters\n        this.renderCharacters(rpgEngine);\n        \n        // Render UI\n        this.renderUI(rpgEngine);\n        \n        // Update FPS\n        this.updateFPS();\n    }\n    \n    updateCamera(rpgEngine) {\n        const myChar = rpgEngine.getMyCharacter();\n        if (myChar) {\n            // Center camera on player character\n            this.cameraX = (myChar.x * rpgEngine.tileSize) - (this.canvas.width / 2);\n            this.cameraY = (myChar.y * rpgEngine.tileSize) - (this.canvas.height / 2);\n            \n            // Clamp camera to map bounds\n            this.cameraX = Math.max(0, Math.min(this.cameraX, \n                (rpgEngine.mapWidth * rpgEngine.tileSize) - this.canvas.width));\n            this.cameraY = Math.max(0, Math.min(this.cameraY, \n                (rpgEngine.mapHeight * rpgEngine.tileSize) - this.canvas.height));\n        }\n    }\n    \n    renderMap(rpgEngine) {\n        const tileSize = rpgEngine.tileSize;\n        \n        for (let y = 0; y < rpgEngine.mapHeight; y++) {\n            for (let x = 0; x < rpgEngine.mapWidth; x++) {\n                const tileType = rpgEngine.map[y][x];\n                const tile = this.sprites.getMapTile(tileType);\n                \n                const screenX = (x * tileSize) - this.cameraX;\n                const screenY = (y * tileSize) - this.cameraY;\n                \n                // Only render tiles that are visible on screen\n                if (screenX > -tileSize && screenX < this.canvas.width &&\n                    screenY > -tileSize && screenY < this.canvas.height) {\n                    \n                    this.sprites.renderSprite(this.ctx, tile, screenX, screenY, 1);\n                }\n            }\n        }\n    }\n    \n    renderTarget(rpgEngine) {\n        if (rpgEngine.targetPosition) {\n            const target = rpgEngine.targetPosition;\n            const screenX = (target.x * rpgEngine.tileSize) - this.cameraX;\n            const screenY = (target.y * rpgEngine.tileSize) - this.cameraY;\n            \n            // Render target indicator\n            this.ctx.strokeStyle = '#ff0000';\n            this.ctx.lineWidth = 2;\n            this.ctx.strokeRect(screenX, screenY, rpgEngine.tileSize, rpgEngine.tileSize);\n            \n            // Animated target marker\n            const time = Date.now() / 500;\n            const alpha = (Math.sin(time) + 1) / 2;\n            this.ctx.fillStyle = `rgba(255, 0, 0, ${alpha * 0.3})`;\n            this.ctx.fillRect(screenX, screenY, rpgEngine.tileSize, rpgEngine.tileSize);\n        }\n    }\n    \n    renderCharacters(rpgEngine) {\n        const tileSize = rpgEngine.tileSize;\n        \n        for (let [characterId, character] of rpgEngine.characters) {\n            const screenX = (character.x * tileSize) - this.cameraX;\n            const screenY = (character.y * tileSize) - this.cameraY;\n            \n            // Only render characters that are visible\n            if (screenX > -tileSize && screenX < this.canvas.width &&\n                screenY > -tileSize && screenY < this.canvas.height) {\n                \n                // Get appropriate sprite\n                const sprite = this.sprites.getCharacterSprite(\n                    character.direction, \n                    character.isMoving, \n                    rpgEngine.animationFrame\n                );\n                \n                // Render character sprite\n                this.sprites.renderSprite(\n                    this.ctx, \n                    sprite, \n                    screenX + 4, \n                    screenY + 4, \n                    1\n                );\n                \n                // Render character name\n                this.ctx.fillStyle = '#000';\n                this.ctx.font = '12px Arial';\n                this.ctx.textAlign = 'center';\n                this.ctx.fillText(\n                    character.name, \n                    screenX + tileSize/2, \n                    screenY - 5\n                );\n                \n                // Highlight own character\n                if (character.id === rpgEngine.myCharacterId) {\n                    this.ctx.strokeStyle = '#ffff00';\n                    this.ctx.lineWidth = 2;\n                    this.ctx.strokeRect(screenX, screenY, tileSize, tileSize);\n                }\n            }\n        }\n    }\n    \n    renderUI(rpgEngine) {\n        // Render tick counter\n        this.ctx.fillStyle = '#fff';\n        this.ctx.font = '14px Arial';\n        this.ctx.textAlign = 'left';\n        this.ctx.fillText(`Tick: ${rpgEngine.currentTick}`, 10, 25);\n        \n        // Render character count\n        this.ctx.fillText(`Players: ${rpgEngine.characters.size}`, 10, 45);\n    }\n    \n    updateFPS() {\n        this.frameCount++;\n        const currentTime = performance.now();\n        \n        if (currentTime - this.lastFpsTime >= 1000) {\n            this.fps = Math.round(this.frameCount * 1000 / (currentTime - this.lastFpsTime));\n            this.frameCount = 0;\n            this.lastFpsTime = currentTime;\n        }\n    }\n    \n    getFPS() {\n        return this.fps;\n    }\n}
+                }
+                // Random trees
+                else if (Math.random() < 0.05 && !(x >= 10 && x <= 15 && y >= 8 && y <= 10)) {
+                    row.push('tree');
+                }
+                // Stone path in center
+                else if ((x >= 10 && x <= 15 && y >= 8 && y <= 10) || 
+                        (x >= 12 && x <= 13 && y >= 5 && y <= 13)) {
+                    row.push('stone');
+                }
+                // Default grass
+                else {
+                    row.push('grass');
+                }
+            }
+            this.map.push(row);
+        }
+    }
+    
+    setupMouseHandling() {
+        this.targetPosition = null;
+        this.mouseMoveCallback = null;
+    }
+    
+    setMouseMoveCallback(callback) {
+        this.mouseMoveCallback = callback;
+    }
+    
+    handleMouseClick(mouseX, mouseY, canvasRect) {
+        // Convert mouse coordinates to tile coordinates
+        const tileX = Math.floor((mouseX - canvasRect.left) / this.tileSize);
+        const tileY = Math.floor((mouseY - canvasRect.top) / this.tileSize);
+        
+        // Check if click is within map bounds and not on a tree
+        if (tileX >= 0 && tileX < this.mapWidth && 
+            tileY >= 0 && tileY < this.mapHeight &&
+            this.map[tileY][tileX] !== 'tree') {
+            
+            this.targetPosition = { x: tileX, y: tileY };
+            
+            // Send movement command to server
+            if (this.mouseMoveCallback) {
+                this.mouseMoveCallback(tileX, tileY);
+            }
+            
+            return true;
+        }
+        
+        return false;
+    }
+    
+    startTickSystem() {
+        this.stopTickSystem();
+        
+        this.tickTimer = setInterval(() => {
+            this.processTick();
+        }, this.tickRate);
+    }
+    
+    stopTickSystem() {
+        if (this.tickTimer) {
+            clearInterval(this.tickTimer);
+            this.tickTimer = null;
+        }
+    }
+    
+    processTick() {
+        this.currentTick++;
+        
+        // Update animation frame every tick
+        this.animationFrame = Math.floor(this.currentTick / 2) % 2;
+        
+        // Process character movements
+        for (let [characterId, character] of this.characters) {
+            this.updateCharacterMovement(character);
+        }
+    }
+    
+    updateCharacterMovement(character) {
+        if (character.movementQueue && character.movementQueue.length > 0) {
+            const nextMove = character.movementQueue[0];
+            const currentTime = Date.now();
+            
+            // Check if enough time has passed for the next movement step
+            if (currentTime >= nextMove.executeTime) {
+                character.x = nextMove.x;
+                character.y = nextMove.y;
+                character.movementQueue.shift();
+                
+                // Update character state
+                if (character.movementQueue.length === 0) {
+                    character.isMoving = false;
+                    character.direction = character.direction || 'down';
+                } else {
+                    character.isMoving = true;
+                    // Calculate direction based on next movement
+                    const next = character.movementQueue[0];
+                    character.direction = this.calculateDirection(character.x, character.y, next.x, next.y);
+                }
+            }
+        }
+    }
+    
+    calculateDirection(fromX, fromY, toX, toY) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+            return dx > 0 ? 'right' : 'left';
+        } else {
+            return dy > 0 ? 'down' : 'up';
+        }
+    }
+    
+    addCharacter(characterData) {
+        const character = {
+            id: characterData.id,
+            name: characterData.name || 'Civilian',
+            x: characterData.x || 12,
+            y: characterData.y || 9,
+            direction: characterData.direction || 'down',
+            isMoving: false,
+            movementQueue: [],
+            color: characterData.color || this.generateRandomColor(),
+            joinTime: Date.now()
+        };
+        
+        this.characters.set(characterData.id, character);
+        return character;
+    }
+    
+    removeCharacter(characterId) {
+        this.characters.delete(characterId);
+    }
+    
+    updateCharacter(characterData) {
+        const character = this.characters.get(characterData.id);
+        if (character) {
+            // Update character with server data
+            Object.assign(character, characterData);
+            
+            // Handle movement path
+            if (characterData.movementPath && characterData.movementPath.length > 0) {
+                character.movementQueue = characterData.movementPath.map((pos, index) => ({
+                    x: pos.x,
+                    y: pos.y,
+                    executeTime: Date.now() + (index * this.tickRate)
+                }));
+                character.isMoving = true;
+                
+                // Set initial direction
+                if (character.movementQueue.length > 0) {
+                    const firstMove = character.movementQueue[0];
+                    character.direction = this.calculateDirection(
+                        character.x, character.y, 
+                        firstMove.x, firstMove.y
+                    );
+                }
+            }
+        }
+    }
+    
+    generateRandomColor() {
+        const colors = [
+            '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', 
+            '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+    
+    getMyCharacter() {
+        return this.characters.get(this.myCharacterId);
+    }
+    
+    findPath(startX, startY, targetX, targetY) {
+        // Simple pathfinding - straight line for now
+        // In a full implementation, you'd use A* pathfinding
+        const path = [];
+        
+        let currentX = startX;
+        let currentY = startY;
+        
+        while (currentX !== targetX || currentY !== targetY) {
+            // Move one step closer to target
+            if (currentX < targetX) currentX++;
+            else if (currentX > targetX) currentX--;
+            
+            if (currentY < targetY) currentY++;
+            else if (currentY > targetY) currentY--;
+            
+            // Check if position is valid (not a tree)
+            if (this.map[currentY] && this.map[currentY][currentX] !== 'tree') {
+                path.push({ x: currentX, y: currentY });
+            } else {
+                // Hit obstacle, stop pathfinding
+                break;
+            }
+        }
+        
+        return path;
+    }
+    
+    getState() {
+        return {
+            characters: Array.from(this.characters.values()),
+            currentTick: this.currentTick,
+            mapData: this.map
+        };
+    }
+    
+    setState(state) {
+        if (state.characters) {
+            // Update all characters
+            const newCharacters = new Map();
+            
+            state.characters.forEach(charData => {
+                if (this.characters.has(charData.id)) {
+                    // Update existing character
+                    this.updateCharacter(charData);
+                    newCharacters.set(charData.id, this.characters.get(charData.id));
+                } else {
+                    // Add new character
+                    const newChar = this.addCharacter(charData);
+                    newCharacters.set(charData.id, newChar);
+                }
+            });
+            
+            this.characters = newCharacters;
+        }
+        
+        if (state.currentTick !== undefined) {
+            this.currentTick = state.currentTick;
+        }
+    }
+}
+
+// RPG Renderer
+class RPGRenderer {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.sprites = new RPGSprites();
+        this.fps = 0;
+        this.frameCount = 0;
+        this.lastFpsTime = 0;
+        
+        // Camera system
+        this.cameraX = 0;
+        this.cameraY = 0;
+    }
+    
+    render(rpgEngine) {
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Update camera to follow player
+        this.updateCamera(rpgEngine);
+        
+        // Render map
+        this.renderMap(rpgEngine);
+        
+        // Render target position
+        this.renderTarget(rpgEngine);
+        
+        // Render characters
+        this.renderCharacters(rpgEngine);
+        
+        // Render UI
+        this.renderUI(rpgEngine);
+        
+        // Update FPS
+        this.updateFPS();
+    }
+    
+    updateCamera(rpgEngine) {
+        const myChar = rpgEngine.getMyCharacter();
+        if (myChar) {
+            // Center camera on player character
+            this.cameraX = (myChar.x * rpgEngine.tileSize) - (this.canvas.width / 2);
+            this.cameraY = (myChar.y * rpgEngine.tileSize) - (this.canvas.height / 2);
+            
+            // Clamp camera to map bounds
+            this.cameraX = Math.max(0, Math.min(this.cameraX, 
+                (rpgEngine.mapWidth * rpgEngine.tileSize) - this.canvas.width));
+            this.cameraY = Math.max(0, Math.min(this.cameraY, 
+                (rpgEngine.mapHeight * rpgEngine.tileSize) - this.canvas.height));
+        }
+    }
+    
+    renderMap(rpgEngine) {
+        const tileSize = rpgEngine.tileSize;
+        
+        for (let y = 0; y < rpgEngine.mapHeight; y++) {
+            for (let x = 0; x < rpgEngine.mapWidth; x++) {
+                const tileType = rpgEngine.map[y][x];
+                const tile = this.sprites.getMapTile(tileType);
+                
+                const screenX = (x * tileSize) - this.cameraX;
+                const screenY = (y * tileSize) - this.cameraY;
+                
+                // Only render tiles that are visible on screen
+                if (screenX > -tileSize && screenX < this.canvas.width &&
+                    screenY > -tileSize && screenY < this.canvas.height) {
+                    
+                    this.sprites.renderSprite(this.ctx, tile, screenX, screenY, 1);
+                }
+            }
+        }
+    }
+    
+    renderTarget(rpgEngine) {
+        if (rpgEngine.targetPosition) {
+            const target = rpgEngine.targetPosition;
+            const screenX = (target.x * rpgEngine.tileSize) - this.cameraX;
+            const screenY = (target.y * rpgEngine.tileSize) - this.cameraY;
+            
+            // Render target indicator
+            this.ctx.strokeStyle = '#ff0000';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(screenX, screenY, rpgEngine.tileSize, rpgEngine.tileSize);
+            
+            // Animated target marker
+            const time = Date.now() / 500;
+            const alpha = (Math.sin(time) + 1) / 2;
+            this.ctx.fillStyle = `rgba(255, 0, 0, ${alpha * 0.3})`;
+            this.ctx.fillRect(screenX, screenY, rpgEngine.tileSize, rpgEngine.tileSize);
+        }
+    }
+    
+    renderCharacters(rpgEngine) {
+        const tileSize = rpgEngine.tileSize;
+        
+        for (let [characterId, character] of rpgEngine.characters) {
+            const screenX = (character.x * tileSize) - this.cameraX;
+            const screenY = (character.y * tileSize) - this.cameraY;
+            
+            // Only render characters that are visible
+            if (screenX > -tileSize && screenX < this.canvas.width &&
+                screenY > -tileSize && screenY < this.canvas.height) {
+                
+                // Get appropriate sprite
+                const sprite = this.sprites.getCharacterSprite(
+                    character.direction, 
+                    character.isMoving, 
+                    rpgEngine.animationFrame
+                );
+                
+                // Render character sprite
+                this.sprites.renderSprite(
+                    this.ctx, 
+                    sprite, 
+                    screenX + 4, 
+                    screenY + 4, 
+                    1
+                );
+                
+                // Render character name
+                this.ctx.fillStyle = '#000';
+                this.ctx.font = '12px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(
+                    character.name, 
+                    screenX + tileSize/2, 
+                    screenY - 5
+                );
+                
+                // Highlight own character
+                if (character.id === rpgEngine.myCharacterId) {
+                    this.ctx.strokeStyle = '#ffff00';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(screenX, screenY, tileSize, tileSize);
+                }
+            }
+        }
+    }
+    
+    renderUI(rpgEngine) {
+        // Render tick counter
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(`Tick: ${rpgEngine.currentTick}`, 10, 25);
+        
+        // Render character count
+        this.ctx.fillText(`Players: ${rpgEngine.characters.size}`, 10, 45);
+    }
+    
+    updateFPS() {
+        this.frameCount++;
+        const currentTime = performance.now();
+        
+        if (currentTime - this.lastFpsTime >= 1000) {
+            this.fps = Math.round(this.frameCount * 1000 / (currentTime - this.lastFpsTime));
+            this.frameCount = 0;
+            this.lastFpsTime = currentTime;
+        }
+    }
+    
+    getFPS() {
+        return this.fps;
+    }
+}
