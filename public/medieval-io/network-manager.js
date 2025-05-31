@@ -57,6 +57,9 @@ class NetworkManager {
             this.updateConnectionStatus(true, 'Connected');
             console.log('✅ Connected to server with ID:', this.playerId);
             
+            // 🔧 MenuScene에 연결 성공 알림
+            this.emit('connected');
+            
             // 게임 참가 요청
             this.socket.emit('joinGame', {
                 playerName: 'Knight_' + Math.floor(Math.random() * 1000)
