@@ -131,7 +131,7 @@ class Player {
         
         // 공격 쿨다운 감소
         if (this.attackCooldown > 0) {
-            this.attackCooldown -= deltaTime;
+            this.attackCooldown -= deltaTime * 1000; // 밀리초 단위로 변환
         }
     }
     
@@ -239,9 +239,9 @@ class Player {
      */
     setMoving(moving) {
         this.isMoving = moving;
-        if (moving) {
+        if (moving && this.state !== PLAYER_STATES.ATTACKING) {
             this.state = PLAYER_STATES.MOVING;
-        } else {
+        } else if (!moving && this.state !== PLAYER_STATES.ATTACKING) {
             this.state = PLAYER_STATES.IDLE;
         }
     }
@@ -284,7 +284,7 @@ class Player {
     performAttack(targetX, targetY) {
         if (this.attackCooldown > 0) return false;
         
-        this.state = PLAYER_STATES.ATTACKING;
+        // 공격 쿨다운 설정 (하지만 이동은 막지 않음)
         this.attackCooldown = 500; // 0.5초 쿨다운
         
         // 공격 방향 계산
@@ -303,6 +303,10 @@ class Player {
             this.setDirection('left');
         }
         
+        // 잠깐 공격 상태로 설정 (이동은 계속 가능)
+        const prevState = this.state;
+        this.state = PLAYER_STATES.ATTACKING;
+        
         // 무기 표시 및 공격 애니메이션
         this.weapon.setVisible(true);
         
@@ -315,7 +319,10 @@ class Player {
             yoyo: true,
             onComplete: () => {
                 this.weapon.setVisible(false);
-                this.state = PLAYER_STATES.IDLE;
+                // 공격 상태가 아닌 이전 상태로 복원
+                if (this.state === PLAYER_STATES.ATTACKING) {
+                    this.state = this.isMoving ? PLAYER_STATES.MOVING : PLAYER_STATES.IDLE;
+                }
             }
         });
         
@@ -440,6 +447,7 @@ class InputManager {
         this.movement = { x: 0, y: 0 };
         this.lastInputSent = 0;
         this.inputSendRate = 1000 / 60; // 60fps
+        this.lastMovement = { x: 0, y: 0 }; // 이전 이동 상태 저장
     }
     
     /**
@@ -481,15 +489,15 @@ class InputManager {
         
         this.movement = { x, y };
         
-        // 방향 설정
-        if (x !== 0 || y !== 0) {
+        // 방향 설정 (공격 중이 아닐 때만)
+        if (this.player.state !== PLAYER_STATES.ATTACKING && (x !== 0 || y !== 0)) {
             if (Math.abs(x) > Math.abs(y)) {
                 this.player.setDirection(x > 0 ? 'right' : 'left');
             } else {
                 this.player.setDirection(y > 0 ? 'down' : 'up');
             }
             this.player.setMoving(true);
-        } else {
+        } else if (x === 0 && y === 0) {
             this.player.setMoving(false);
         }
     }
@@ -526,12 +534,21 @@ class InputManager {
      * 입력을 네트워크로 전송합니다
      */
     sendInputToNetwork() {
-        if (networkManager && (this.movement.x !== 0 || this.movement.y !== 0)) {
+        // 이동 상태가 변경되었거나 현재 이동 중일 때 전송
+        const movementChanged = this.movement.x !== this.lastMovement.x || this.movement.y !== this.lastMovement.y;
+        const isMoving = this.movement.x !== 0 || this.movement.y !== 0;
+        
+        if (networkManager && (movementChanged || isMoving)) {
             networkManager.sendPlayerInput({
                 movement: this.movement,
                 direction: this.player.direction,
-                playerId: this.player.playerId
+                playerId: this.player.playerId,
+                isMoving: isMoving,
+                timestamp: Date.now()
             });
+            
+            // 이전 이동 상태 저장
+            this.lastMovement = { x: this.movement.x, y: this.movement.y };
         }
     }
     
@@ -540,6 +557,13 @@ class InputManager {
      * @param {number} deltaTime - 프레임 시간
      */
     applyMovementLocally(deltaTime) {
+        // 사망 상태에서는 이동 불가
+        if (this.player.state === PLAYER_STATES.DEAD) {
+            this.player.sprite.setVelocity(0, 0);
+            return;
+        }
+        
+        // 이동 입력 적용 (공격 중에도 이동 가능)
         if (this.movement.x !== 0 || this.movement.y !== 0) {
             const speed = GAME_CONFIG.PLAYER.SPEED;
             this.player.sprite.setVelocity(
