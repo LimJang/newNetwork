@@ -48,6 +48,19 @@ class SpriteGenerator {
         canvas.saveTexture(key);
         canvas.destroy();
         
+        // 🔧 프레임 설정 추가 - 텍스처를 여러 프레임으로 분할
+        scene.textures.get(key).add('__BASE', 0, 0, 0, 
+            SPRITE_CONFIG.KNIGHT.WIDTH * SPRITE_CONFIG.KNIGHT.FRAMES, 
+            SPRITE_CONFIG.KNIGHT.HEIGHT);
+        
+        // 각 프레임을 개별적으로 정의
+        for (let i = 0; i < SPRITE_CONFIG.KNIGHT.FRAMES; i++) {
+            scene.textures.get(key).add(i, 0, 
+                i * SPRITE_CONFIG.KNIGHT.WIDTH, 0,
+                SPRITE_CONFIG.KNIGHT.WIDTH, 
+                SPRITE_CONFIG.KNIGHT.HEIGHT);
+        }
+        
         // 애니메이션 프레임 설정
         scene.anims.create({
             key: key + '_walk',
